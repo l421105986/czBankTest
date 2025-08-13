@@ -1,0 +1,45 @@
+
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build EXE
+        run: |
+          cd app
+          pyinstaller -F app_main.py --name "业务工具确认版" --hidden-import=openpyxl --hidden-import=xlrd -w
+          if (Test-Path dist) { Write-Host "Build succeeded." } else { throw "Build failed"; }
+
+      - name: Upload exe (single file)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hx-offline-editor-exe
+          path: app/dist/*
+
+      - name: Upload dist folder (portable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hx-offline-editor-dist
+          path: app/dist/**
